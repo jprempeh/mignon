@@ -2,12 +2,15 @@
  * Created by Joe on 1/11/16.
  */
 var React = require('React');
+var NotesList = require('./NotesList');
 
 var Notes = React.createClass({
 	render: function() {
 		return (
-			<div> <p> Notes</p>
-				Notes: {this.props.notes}</div>
+			<div>
+				<h3> Notes for {this.props.username} </h3>
+				<NotesList notes={this.props.notes} />
+			</div>
 		)
 	}
 });
