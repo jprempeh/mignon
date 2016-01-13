@@ -5,14 +5,15 @@ var UserProfile = require('./Github/UserProfile');
 var Notes = require('./Notes/Notes');
 var ReactFireMixin = require('reactfire');
 var Firebase = require('firebase');
+var helpers = require('../utils/helpers');
 
 var Profile = React.createClass({
 	mixins: [ReactFireMixin],
 	getInitialState: function() {
 		return {
-			notes: [1,2,3],
-			bio: {name: 'Joejoejoe'},
-			repos: ['narcos']
+			notes: [],
+			bio: {},
+			repos: []
 		}
 	},
 	componentDidMount: function(){
@@ -20,6 +21,14 @@ var Profile = React.createClass({
 		this.ref = new Firebase('https://amber-heat-2736.firebaseio.com/');
 		var childRef = this.ref.child(this.props.params.username);
 		this.bindAsArray(childRef, 'notes');
+
+		helpers.getGithubInfo(this.props.params.username)
+			.then(function(data) {
+				this.setState({
+					repos: data.repos,
+					bio: data.bio
+				});
+			}.bind(this));
 	},
 	componentWillUnMount: function(){
 		this.unbind('notes');
