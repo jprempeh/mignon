@@ -1,64 +1,74 @@
-var React = require('react');
-var Router = require('react-router');
+/*
+ES6 Refactor
+1. Remove reactfire and router as mixins can't be used with es6 classes
+2. Make profile class
+ */
+import React from 'react'
 import Repos from'./Github/Repos'
 import UserProfile from './Github/UserProfile'
 import Notes from './Notes/Notes'
-var ReactFireMixin = require('reactfire');
-var Firebase = require('firebase');
 import getGithubInfo from '../utils/helpers'
+import Rebase from 're-base'
 
-var Profile = React.createClass({
-	mixins: [ReactFireMixin],
-	getInitialState: function() {
-		return {
+const base = Rebase.createClass('https://amber-heat-2736.firebaseio.com/')  ;
+
+class Profile extends React.Component {
+	constructor(props){
+		super(props);
+		this.state = {
 			notes: [],
 			bio: {},
 			repos: []
 		}
-	},
-	componentDidMount: function(){
-		// make a firebase reference
-		this.ref = new Firebase('https://amber-heat-2736.firebaseio.com/');
-		this.init(this.props.params.username);
-	},
-	componentWillReceiveProps: function(nextProps) {
-		this.unbind('notes');
+	}
+	componentDidMount(){
+		this.init(this.props.params.username)
+	}
+	componentWillReceiveProps(nextProps){
+		base.removeBinding(this.ref);
 		this.init(nextProps.params.username);
-	},
-	componentWillUnMount: function(){
-		this.unbind('notes');
-	},
-	init: function(username) {
-		var childRef = this.ref.child(username);
-		this.bindAsArray(childRef, 'notes');
+	}
+	componentWillUnmount(){
+		base.removeBinding(this.ref);
+	}
+	init(username){
+		this.ref = base.bindToState(username, {
+			context: this,
+			asArray: true,
+			state: 'notes'
+		});
 
 		getGithubInfo(username)
-			.then(function(data) {
+			.then(function(data){
 				this.setState({
-					repos: data.repos,
-					bio: data.bio
-				});
-			}.bind(this));
-	},
-	handleAddNote: function(newNote) {
-		// update FB with new note
-		this.ref.child(this.props.params.username).child(this.state.notes.length).set(newNote);
-	},
-	render: function() {
+					bio: data.bio,
+					repos: data.repos
+				})
+			}.bind(this))
+	}
+	handleAddNote(newNote){
+		base.post(this.props.params.username, {
+			data: this.state.notes.concat([newNote])
+		})
+	}
+	render(){
 		return (
 			<div className="row">
 				<div className="col-md-4">
 					<UserProfile username={this.props.params.username} bio={this.state.bio} />
 				</div>
 				<div className="col-md-4">
-					<Repos username={this.props.params.username} repos={this.state.repos} />
+					<Repos username={this.props.params.username} repos={this.state.repos}/>
 				</div>
 				<div className="col-md-4">
-					<Notes username={this.props.params.username} notes={this.state.notes} addNote={this.handleAddNote} />
+					<Notes
+						username={this.props.params.username}
+						notes={this.state.notes}
+						addNote={(newNote) => this.handleAddNote(newNote)} />
 				</div>
 			</div>
 		)
 	}
-});
+}
 
-module.exports = Profile;
+export default Profile
